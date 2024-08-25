@@ -4,7 +4,7 @@ import org.example.fields.FieldOptions;
 
 public interface FilterOptions{
 
-    FieldOptions where(String value);
-    JoinOptions equal(String value);
+    Filter.FilterBuilder equal(Object value);
+    JoinOptions notEqual(Object value);
 
 }

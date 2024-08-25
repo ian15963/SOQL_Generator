@@ -15,10 +15,10 @@ public class SFHelper {
         if(!classSource.isAnnotationPresent(SFEntityAnnotation.class)){
             throw new RuntimeException();
         }
-        String classAnnotationName = classSource.getDeclaredAnnotation(SFEntityAnnotation.class).name();
+        String classAnnotationName = classSource.getDeclaredAnnotation(SFEntityAnnotation.class).name().isBlank() ? classSource.getSimpleName() : classSource.getDeclaredAnnotation(SFEntityAnnotation.class).name();
         ResultadoVerificacao resultadoVerificacao = validarQuantidade(classSource);
         Integer posicao = 0;
-        for (Field field: classSource.getDeclaredFields()) {
+        for (Field field: fields) {
             if (field.isAnnotationPresent(SFColumn.class)) {
                 posicao++;
                 extrairField(field, stringBuilder, resultadoVerificacao, classAnnotationName, posicao);
@@ -28,7 +28,7 @@ public class SFHelper {
         stringBuilder.append(classAnnotationName);
     }
 
-    public static void extrairField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, String classAnnotationName, Integer posicao){
+    private static void extrairField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, String classAnnotationName, Integer posicao){
         var isNotLast = resultadoVerificacao.isUmCampo() && posicao < resultadoVerificacao.getTotal();
         SFColumn declaredAnnotation = field.getDeclaredAnnotation(SFColumn.class);
         if(declaredAnnotation.type().equals("simple")){
@@ -68,7 +68,7 @@ public class SFHelper {
     }
 
 
-    public static ResultadoVerificacao validarQuantidade(Class<?> sourceClass){
+    private static ResultadoVerificacao validarQuantidade(Class<?> sourceClass){
         int totalCamposAnotacoes = 0;
         for (Field field: sourceClass.getDeclaredFields()){
             if(field.isAnnotationPresent(SFColumn.class)){
@@ -78,4 +78,23 @@ public class SFHelper {
 
         return new ResultadoVerificacao(totalCamposAnotacoes, totalCamposAnotacoes > 1);
     }
+
+    public static void generateValue(Object source, StringBuilder stringBuilder){
+        Class<?> sourceClass = source.getClass();
+        validarTipoClass(sourceClass, source, stringBuilder);
+    }
+
+    private static void validarTipoClass(Class<?> sourceClass, Object sourceField, StringBuilder stringBuilder){
+
+        if(sourceClass.isAssignableFrom(String.class)){
+            stringBuilder.append("\'"+ sourceField.toString() + "\'");
+        }else if (Number.class.isAssignableFrom(sourceClass) || sourceClass.isAssignableFrom(Boolean.class)) {
+            stringBuilder.append(sourceField.toString());
+        }else{
+            throw new RuntimeException();
+        }
+    }
 }
+
+
+

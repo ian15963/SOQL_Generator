@@ -1,6 +1,9 @@
 package org.example.builder;
 
 import org.example.SFHelper;
+import org.example.fields.FieldOptions;
+import org.example.filter.Filter;
+
 import java.util.function.Supplier;
 
 public class SFQueryBuilder implements BuilderOptions{
@@ -17,9 +20,8 @@ public class SFQueryBuilder implements BuilderOptions{
         return this;
     }
 
-    public SFQueryBuilder where(Supplier<String> supplier) {
-        supplier.get();
-        query.append(" WHERE ");
+    public SFQueryBuilder where(Filter filter) {
+        query.append(" WHERE %s".formatted(filter.getQuery()));
         return this;
     }
 
