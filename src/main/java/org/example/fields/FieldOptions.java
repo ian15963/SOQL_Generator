@@ -4,6 +4,6 @@ import org.example.filter.FilterOptions;
 
 public interface FieldOptions {
 
-    FilterOptions field(String name);
+    FilterOptions field(String value);
 
 }

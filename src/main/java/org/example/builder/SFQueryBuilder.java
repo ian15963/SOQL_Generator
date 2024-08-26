@@ -1,23 +1,21 @@
 package org.example.builder;
 
 import org.example.SFHelper;
-import org.example.fields.FieldOptions;
 import org.example.filter.Filter;
-
-import java.util.function.Supplier;
 
 public class SFQueryBuilder implements BuilderOptions{
 
-    private final StringBuilder query = new StringBuilder();
+    private final StringBuilder query;
 
-    public SFQueryBuilder fromEntity(Class<?> sourceClass) throws NoSuchFieldException {
-        SFHelper.generateBaseQuery(sourceClass, query);
-        return this;
+    private SFQueryBuilder(StringBuilder stringBuilder){
+        this.query = new StringBuilder();
     }
 
-    public SFQueryBuilder select(){
-        query.append(SoqlOperators.SELECT);
-        return this;
+    public static SFQueryBuilder select(Class<?> sourceClass) throws NoSuchFieldException {
+        SFQueryBuilder queryBuilder = new SFQueryBuilder(new StringBuilder());
+        queryBuilder.query.append(SoqlOperators.SELECT);
+        SFHelper.generateBaseQuery(sourceClass, queryBuilder.query);
+        return queryBuilder;
     }
 
     public SFQueryBuilder where(Filter filter) {

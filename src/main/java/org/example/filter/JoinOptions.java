@@ -6,4 +6,5 @@ public interface JoinOptions {
 
     FieldOptions and();
     FieldOptions or();
+    Filter build();
 }

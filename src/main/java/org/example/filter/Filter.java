@@ -1,12 +1,9 @@
 package org.example.filter;
 
-import com.fasterxml.jackson.databind.JavaType;
 import org.example.SFHelper;
 import org.example.fields.FieldOptions;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Filter{
 
@@ -24,22 +21,16 @@ public class Filter{
         private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         private final StringBuilder stringBuilder;
 
-        private String field;
-        private List<String> fields;
-
-        public FilterBuilder() {
+        private FilterBuilder() {
             stringBuilder = new StringBuilder();
-            fields = new ArrayList<>();
         }
 
-        public FilterBuilder(String field) {
+        private FilterBuilder(String field) {
             this.stringBuilder = new StringBuilder();
-            this.field = field;
-            this.fields = new ArrayList<>();
         }
 
         @Override
-        public FilterBuilder equal(Object value) {
+        public JoinOptions equal(Object value) {
             stringBuilder.append(" = ");
             SFHelper.generateValue(value, stringBuilder);
             return this;
@@ -47,7 +38,15 @@ public class Filter{
 
         @Override
         public JoinOptions notEqual(Object value) {
-            return null;
+            stringBuilder.append(" != ");
+            SFHelper.generateValue(value, stringBuilder);
+            return this;
+        }
+
+        public static FilterOptions initialField(String name){
+            FilterBuilder filter = new FilterBuilder();
+            filter.stringBuilder.append(name);
+            return filter;
         }
 
         @Override
@@ -58,12 +57,14 @@ public class Filter{
 
         @Override
         public FieldOptions and() {
-            return null;
+            stringBuilder.append(" AND ");
+            return this;
         }
 
         @Override
         public FieldOptions or() {
-            return null;
+            stringBuilder.append(" OR ");
+            return this;
         }
 
         public Filter build(){

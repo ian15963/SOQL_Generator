@@ -1,5 +1,7 @@
 package org.example;
 
+import org.example.constant.SFType;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,10 +13,10 @@ public class SFEntity {
 
     @SFColumn(name = "Name")
     private String name;
-    @SFColumn(name = "Address", type = "complex")
+    @SFColumn(name = "Address", type = SFType.COMPLEX)
     private Address address;
 
-    @SFColumn(name = "Addresses", type = "complex")
+    @SFColumn(name = "Addresses", type = SFType.COMPLEX)
     private List<Address> valores = new ArrayList<>();
 
     public SFEntity() {

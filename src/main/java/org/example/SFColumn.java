@@ -1,5 +1,7 @@
 package org.example;
 
+import org.example.constant.SFType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -9,7 +11,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SFColumn {
 
-    String name() default "";
-    String type() default "simple";
+    String name();
+    SFType type() default SFType.SIMPLE;
 
 }

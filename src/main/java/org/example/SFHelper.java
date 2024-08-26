@@ -2,6 +2,7 @@ package org.example;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.example.constant.SFType;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -31,13 +32,13 @@ public class SFHelper {
     private static void extrairField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, String classAnnotationName, Integer posicao){
         var isNotLast = resultadoVerificacao.isUmCampo() && posicao < resultadoVerificacao.getTotal();
         SFColumn declaredAnnotation = field.getDeclaredAnnotation(SFColumn.class);
-        if(declaredAnnotation.type().equals("simple")){
+        if(declaredAnnotation.type().equals(SFType.SIMPLE)){
             if (isNotLast){
                 stringBuilder.append(" %s.%s,".formatted(classAnnotationName,declaredAnnotation.name()));
             }else{
                 stringBuilder.append("%s.%s".formatted(classAnnotationName,declaredAnnotation.name()));
             }
-        }else if(declaredAnnotation.type().equals("complex")){
+        }else if(declaredAnnotation.type().equals(SFType.COMPLEX)){
             if(Collection.class.isAssignableFrom(field.getType())){
                 ParameterizedType genericType = (ParameterizedType) field.getGenericType();
                 Type actualTypeArgument = genericType.getActualTypeArguments()[0];
