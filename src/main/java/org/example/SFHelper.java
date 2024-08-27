@@ -7,11 +7,17 @@ import org.example.constant.SFType;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 
 public class SFHelper {
 
+    private static Class<?> entity;
+
     public static void generateBaseQuery(Class<?> classSource, StringBuilder stringBuilder) throws NoSuchFieldException {
+        entity = classSource;
         Field[] fields = classSource.getDeclaredFields();
         if(!classSource.isAnnotationPresent(SFEntityAnnotation.class)){
             throw new RuntimeException();
@@ -22,49 +28,98 @@ public class SFHelper {
         for (Field field: fields) {
             if (field.isAnnotationPresent(SFColumn.class)) {
                 posicao++;
-                extrairField(field, stringBuilder, resultadoVerificacao, classAnnotationName, posicao);
+                extractField(field, stringBuilder, resultadoVerificacao, posicao);
             }
         }
         stringBuilder.append(" FROM ");
         stringBuilder.append(classAnnotationName);
     }
 
-    private static void extrairField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, String classAnnotationName, Integer posicao){
+    private static void extractField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, Integer posicao){
         var isNotLast = resultadoVerificacao.isUmCampo() && posicao < resultadoVerificacao.getTotal();
         SFColumn declaredAnnotation = field.getDeclaredAnnotation(SFColumn.class);
         if(declaredAnnotation.type().equals(SFType.SIMPLE)){
             if (isNotLast){
-                stringBuilder.append(" %s.%s,".formatted(classAnnotationName,declaredAnnotation.name()));
+                stringBuilder.append(" %s,".formatted(declaredAnnotation.name()));
             }else{
-                stringBuilder.append("%s.%s".formatted(classAnnotationName,declaredAnnotation.name()));
+                stringBuilder.append(" %s".formatted(declaredAnnotation.name()));
             }
         }else if(declaredAnnotation.type().equals(SFType.COMPLEX)){
             if(Collection.class.isAssignableFrom(field.getType())){
-                ParameterizedType genericType = (ParameterizedType) field.getGenericType();
-                Type actualTypeArgument = genericType.getActualTypeArguments()[0];
-                Field[] declaredFields = ((Class<?>) actualTypeArgument).getDeclaredFields();
-                Class<?> javaType = TypeFactory.rawClass(actualTypeArgument);
-                stringBuilder.append("(SELECT");
-                Integer posicao2 = 0;
-                for (Field field1: declaredFields){
-                    if(field1.isAnnotationPresent(SFColumn.class)){
-                        posicao2++;
-                        extrairField(field1, stringBuilder, validarQuantidade(javaType), javaType.getSimpleName(), posicao2);
+                generateSubquery(field, stringBuilder);
+            }else{
+                for (Field declaredField: extractDeclaredField(field)){
+                    if (isNotLast){
+                        stringBuilder.append(" %s.%s,".formatted(declaredAnnotation.name(), declaredField.getName()));
+                    }else{
+                        stringBuilder.append(" %s.%s".formatted(declaredAnnotation.name(), declaredField.getName()));
                     }
                 }
-                stringBuilder.append(" FROM ");
-                if (isNotLast){
-                    stringBuilder.append("%s.%s),".formatted(classAnnotationName,declaredAnnotation.name()));
-                }else {
-                    stringBuilder.append("%s.%s)".formatted(classAnnotationName,declaredAnnotation.name()));
-                }
-            }else{
-                if (isNotLast){
-                    stringBuilder.append(" %s.%s,".formatted(classAnnotationName, declaredAnnotation.name()));
-                }else{
-                    stringBuilder.append(" %s.%s".formatted(classAnnotationName, declaredAnnotation.name()));
-                }
             }
+        }
+    }
+
+    private static Field[] extractDeclaredField(Object sourceObject){
+        Type actualTypeArgument = ((Field) sourceObject).getGenericType();
+        JavaType javaType = TypeFactory.defaultInstance().constructType(actualTypeArgument);
+
+        Field[] declaredFields;
+
+        if(javaType.getContentType() != null){
+            declaredFields = javaType.getContentType().getRawClass().getDeclaredFields();
+        }else{
+            declaredFields = javaType.getRawClass().getDeclaredFields();
+        }
+
+        return declaredFields;
+    }
+
+    public static void generateSubquery(Object sourceObject, StringBuilder stringBuilder){
+
+        Class<?> sourceClass = sourceObject.getClass();
+
+        if(sourceClass.isAssignableFrom(String.class)){
+            stringBuilder.append(sourceObject);
+            return;
+        }
+
+        Integer totalInvalido = 0;
+        Field[] fields = entity.getDeclaredFields();
+
+        for (Field field: fields){
+            if(!field.getType().equals(sourceClass)){
+                totalInvalido++;
+            }
+        }
+
+//        if(totalInvalido == fields.length){
+//            throw new RuntimeException();
+//        }
+
+        Type actualTypeArgument = ((Field) sourceObject).getGenericType();
+        JavaType javaType = TypeFactory.defaultInstance().constructType(actualTypeArgument);
+        Class<?> actualClass;
+        if(javaType.getContentType() != null){
+            actualClass = javaType.getContentType().getRawClass();
+        }else{
+            actualClass = javaType.getRawClass();
+        }
+
+        String classAnnotationName = ((Field)sourceObject).getDeclaredAnnotation(SFColumn.class).name();
+
+        stringBuilder.append("(SELECT");
+        Integer posicao2 = 0;
+        for (Field field1: extractDeclaredField(sourceObject)){
+            if(field1.isAnnotationPresent(SFColumn.class)){
+                posicao2++;
+                extractField(field1, stringBuilder, validarQuantidade(actualClass), posicao2);
+            }
+        }
+        stringBuilder.append(" FROM ");
+        if (validarQuantidade(actualClass).isUmCampo()){
+            stringBuilder.append("%s),".formatted(classAnnotationName));
+        }else {
+            stringBuilder.append("%s)".formatted(classAnnotationName));
         }
     }
 
@@ -87,10 +142,19 @@ public class SFHelper {
 
     private static void validarTipoClass(Class<?> sourceClass, Object sourceField, StringBuilder stringBuilder){
 
+        final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
         if(sourceClass.isAssignableFrom(String.class)){
             stringBuilder.append("\'"+ sourceField.toString() + "\'");
         }else if (Number.class.isAssignableFrom(sourceClass) || sourceClass.isAssignableFrom(Boolean.class)) {
             stringBuilder.append(sourceField.toString());
+        }else if(sourceClass.isAssignableFrom(LocalDateTime.class)){
+            LocalDateTime dateTime = (LocalDateTime) sourceField;
+            stringBuilder.append("\'" + dateTime.format(dateTimeFormatter) + "\'");
+        }else if(sourceClass.isAssignableFrom(LocalDate.class)){
+            LocalDate localDate = (LocalDate) sourceField;
+            stringBuilder.append("\'" + localDate.format(dateFormatter) + "\'");
         }else{
             throw new RuntimeException();
         }

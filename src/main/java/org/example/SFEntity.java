@@ -2,10 +2,11 @@ package org.example;
 
 import org.example.constant.SFType;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@SFEntityAnnotation(name = "Entity")
+@SFEntityAnnotation
 public class SFEntity {
 
     @SFColumn(name = "Id")
@@ -18,6 +19,9 @@ public class SFEntity {
 
     @SFColumn(name = "Addresses", type = SFType.COMPLEX)
     private List<Address> valores = new ArrayList<>();
+
+    @SFColumn(name = "Date")
+    private LocalDateTime dataHora;
 
     public SFEntity() {
     }

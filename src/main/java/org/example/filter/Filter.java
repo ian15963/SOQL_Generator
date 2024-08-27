@@ -3,6 +3,7 @@ package org.example.filter;
 import org.example.SFHelper;
 import org.example.fields.FieldOptions;
 
+import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 
 public class Filter{
@@ -18,7 +19,6 @@ public class Filter{
 
     public static class FilterBuilder implements FilterOptions, FieldOptions, JoinOptions{
 
-        private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         private final StringBuilder stringBuilder;
 
         private FilterBuilder() {
@@ -39,6 +39,34 @@ public class Filter{
         @Override
         public JoinOptions notEqual(Object value) {
             stringBuilder.append(" != ");
+            SFHelper.generateValue(value, stringBuilder);
+            return this;
+        }
+
+        @Override
+        public JoinOptions greaterThan(Object value) {
+            stringBuilder.append(" > ");
+            SFHelper.generateValue(value, stringBuilder);
+            return this;
+        }
+
+        @Override
+        public JoinOptions greaterThanOrEqual(Object value) {
+            stringBuilder.append(" >= ");
+            SFHelper.generateValue(value, stringBuilder);
+            return this;
+        }
+
+        @Override
+        public JoinOptions lessThan(Object value) {
+            stringBuilder.append(" < ");
+            SFHelper.generateValue(value, stringBuilder);
+            return this;
+        }
+
+        @Override
+        public JoinOptions lessThanOrEqual(Object value) {
+            stringBuilder.append(" <= ");
             SFHelper.generateValue(value, stringBuilder);
             return this;
         }
@@ -69,6 +97,13 @@ public class Filter{
 
         public Filter build(){
             return new Filter(stringBuilder.toString());
+        }
+
+        @Override
+        public JoinOptions subquery(Class<?> sourceClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+            Object value = sourceClass.getConstructor().newInstance();
+            SFHelper.generateSubquery(value, stringBuilder);
+            return this;
         }
     }
 
