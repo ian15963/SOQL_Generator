@@ -135,30 +135,6 @@ public class SFHelper {
         return new ResultadoVerificacao(totalCamposAnotacoes, totalCamposAnotacoes > 1);
     }
 
-    public static void generateValue(Object source, StringBuilder stringBuilder){
-        Class<?> sourceClass = source.getClass();
-        validarTipoClass(sourceClass, source, stringBuilder);
-    }
-
-    private static void validarTipoClass(Class<?> sourceClass, Object sourceField, StringBuilder stringBuilder){
-
-        final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        if(sourceClass.isAssignableFrom(String.class)){
-            stringBuilder.append("\'"+ sourceField.toString() + "\'");
-        }else if (Number.class.isAssignableFrom(sourceClass) || sourceClass.isAssignableFrom(Boolean.class)) {
-            stringBuilder.append(sourceField.toString());
-        }else if(sourceClass.isAssignableFrom(LocalDateTime.class)){
-            LocalDateTime dateTime = (LocalDateTime) sourceField;
-            stringBuilder.append("\'" + dateTime.format(dateTimeFormatter) + "\'");
-        }else if(sourceClass.isAssignableFrom(LocalDate.class)){
-            LocalDate localDate = (LocalDate) sourceField;
-            stringBuilder.append("\'" + localDate.format(dateFormatter) + "\'");
-        }else{
-            throw new RuntimeException();
-        }
-    }
 }
 
 
