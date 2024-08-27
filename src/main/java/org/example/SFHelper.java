@@ -2,15 +2,15 @@ package org.example;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import org.example.constant.SFType;
+import org.example.annotation.OneToMany;
+import org.example.annotation.OneToOne;
+import org.example.annotation.SFColumn;
+import org.example.annotation.SFEntityAnnotation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Collection;
+import java.util.Map;
 
 public class SFHelper {
 
@@ -23,7 +23,7 @@ public class SFHelper {
             throw new RuntimeException();
         }
         String classAnnotationName = classSource.getDeclaredAnnotation(SFEntityAnnotation.class).name().isBlank() ? classSource.getSimpleName() : classSource.getDeclaredAnnotation(SFEntityAnnotation.class).name();
-        ResultadoVerificacao resultadoVerificacao = validarQuantidade(classSource);
+        ResultadoVerificacao resultadoVerificacao = validateTotal(classSource);
         Integer posicao = 0;
         for (Field field: fields) {
             if (field.isAnnotationPresent(SFColumn.class)) {
@@ -38,21 +38,30 @@ public class SFHelper {
     private static void extractField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, Integer posicao){
         var isNotLast = resultadoVerificacao.isUmCampo() && posicao < resultadoVerificacao.getTotal();
         SFColumn declaredAnnotation = field.getDeclaredAnnotation(SFColumn.class);
-        if(declaredAnnotation.type().equals(SFType.SIMPLE)){
+        if(!(field.isAnnotationPresent(OneToMany.class) || field.isAnnotationPresent(OneToOne.class))){
             if (isNotLast){
                 stringBuilder.append(" %s,".formatted(declaredAnnotation.name()));
             }else{
                 stringBuilder.append(" %s".formatted(declaredAnnotation.name()));
             }
-        }else if(declaredAnnotation.type().equals(SFType.COMPLEX)){
-            if(Collection.class.isAssignableFrom(field.getType())){
-                generateSubquery(field, stringBuilder);
-            }else{
+        }else{
+            if(field.isAnnotationPresent(OneToMany.class)){
+                resultadoVerificacao.setPosicaoAtual(posicao);
+                generateSubquery(field, stringBuilder, resultadoVerificacao);
+            }else if(field.isAnnotationPresent(OneToOne.class)){
                 for (Field declaredField: extractDeclaredField(field)){
-                    if (isNotLast){
-                        stringBuilder.append(" %s.%s,".formatted(declaredAnnotation.name(), declaredField.getName()));
-                    }else{
-                        stringBuilder.append(" %s.%s".formatted(declaredAnnotation.name(), declaredField.getName()));
+                    if (declaredField.isAnnotationPresent(OneToOne.class)){
+                        JavaType javaType = TypeFactory.defaultInstance().constructType(field.getType());
+                        Integer posicao2 = 0;
+                        extractField(declaredField, stringBuilder, validateTotal(javaType.getRawClass()), posicao2);
+                        return;
+                    }
+                    if(declaredField.isAnnotationPresent(SFColumn.class)){
+                        if (isNotLast){
+                            stringBuilder.append(" %s.%s,".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
+                        }else{
+                            stringBuilder.append(" %s.%s".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
+                        }
                     }
                 }
             }
@@ -60,7 +69,7 @@ public class SFHelper {
     }
 
     private static Field[] extractDeclaredField(Object sourceObject){
-        Type actualTypeArgument = ((Field) sourceObject).getGenericType();
+        Type actualTypeArgument = sourceObject.getClass() == Field.class ? ((Field) sourceObject).getGenericType() : sourceObject.getClass();
         JavaType javaType = TypeFactory.defaultInstance().constructType(actualTypeArgument);
 
         Field[] declaredFields;
@@ -74,7 +83,7 @@ public class SFHelper {
         return declaredFields;
     }
 
-    public static void generateSubquery(Object sourceObject, StringBuilder stringBuilder){
+    public static void generateSubquery(Object sourceObject, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao){
 
         Class<?> sourceClass = sourceObject.getClass();
 
@@ -96,35 +105,31 @@ public class SFHelper {
 //            throw new RuntimeException();
 //        }
 
-        Type actualTypeArgument = ((Field) sourceObject).getGenericType();
-        JavaType javaType = TypeFactory.defaultInstance().constructType(actualTypeArgument);
-        Class<?> actualClass;
-        if(javaType.getContentType() != null){
-            actualClass = javaType.getContentType().getRawClass();
-        }else{
-            actualClass = javaType.getRawClass();
-        }
-
-        String classAnnotationName = ((Field)sourceObject).getDeclaredAnnotation(SFColumn.class).name();
+        String classAnnotationName = sourceClass == Field.class ? ((Field)sourceObject).getDeclaredAnnotation(SFColumn.class).name() : sourceClass.getDeclaredAnnotation(SFEntityAnnotation.class).name();
 
         stringBuilder.append("(SELECT");
         Integer posicao2 = 0;
+        Integer posicaoAtual = resultadoVerificacao.getPosicaoAtual();
         for (Field field1: extractDeclaredField(sourceObject)){
             if(field1.isAnnotationPresent(SFColumn.class)){
                 posicao2++;
-                extractField(field1, stringBuilder, validarQuantidade(actualClass), posicao2);
+                extractField(field1, stringBuilder, resultadoVerificacao, posicao2);
             }
         }
+
+        posicaoAtual = posicaoAtual == 0 ? posicao2 : posicaoAtual;
+
         stringBuilder.append(" FROM ");
-        if (validarQuantidade(actualClass).isUmCampo()){
-            stringBuilder.append("%s),".formatted(classAnnotationName));
-        }else {
-            stringBuilder.append("%s)".formatted(classAnnotationName));
+        stringBuilder.append("%s)".formatted(classAnnotationName));
+
+        if(posicaoAtual < resultadoVerificacao.getTotal()){
+            stringBuilder.append(",");
         }
+
     }
 
 
-    private static ResultadoVerificacao validarQuantidade(Class<?> sourceClass){
+    public static ResultadoVerificacao validateTotal(Class<?> sourceClass){
         int totalCamposAnotacoes = 0;
         for (Field field: sourceClass.getDeclaredFields()){
             if(field.isAnnotationPresent(SFColumn.class)){
@@ -132,7 +137,7 @@ public class SFHelper {
             }
         }
 
-        return new ResultadoVerificacao(totalCamposAnotacoes, totalCamposAnotacoes > 1);
+        return new ResultadoVerificacao(totalCamposAnotacoes, totalCamposAnotacoes > 1, 0);
     }
 
 }

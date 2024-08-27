@@ -9,5 +9,4 @@ public interface JoinOptions {
     FieldOptions and();
     FieldOptions or();
     Filter build();
-    JoinOptions subquery(Class<?> sourceClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException;
 }

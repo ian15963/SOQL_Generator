@@ -12,8 +12,7 @@ public class Main {
         String query = SFQueryBuilder.select(SFEntity.class)
                 .where(Filter.FilterBuilder
                         .initialField("Name")
-                        .equal("Ian")
-//                        .subquery(Address.class)
+                        .equal().subquery(new Address("São Paulo", "SP"))
                         .and().field("Address")
                         .equal("Haddock Lobo").and().field("Date").greaterThanOrEqual(LocalDate.now()).build()).build();
         System.out.println(query);

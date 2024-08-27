@@ -1,5 +1,9 @@
 package org.example;
 
+import org.example.annotation.OneToMany;
+import org.example.annotation.OneToOne;
+import org.example.annotation.SFColumn;
+import org.example.annotation.SFEntityAnnotation;
 import org.example.constant.SFType;
 
 import java.time.LocalDateTime;
@@ -14,10 +18,13 @@ public class SFEntity {
 
     @SFColumn(name = "Name")
     private String name;
-    @SFColumn(name = "Address", type = SFType.COMPLEX)
+
+    @SFColumn(name = "Address")
+    @OneToOne
     private Address address;
 
-    @SFColumn(name = "Addresses", type = SFType.COMPLEX)
+    @SFColumn(name = "Addresses")
+    @OneToMany
     private List<Address> valores = new ArrayList<>();
 
     @SFColumn(name = "Date")

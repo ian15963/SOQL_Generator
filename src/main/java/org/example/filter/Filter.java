@@ -19,7 +19,7 @@ public class Filter{
         this.query = query;
     }
 
-    public static class FilterBuilder implements FilterOptions, FieldOptions, JoinOptions{
+    public static class FilterBuilder implements FilterOptions, FieldOptions, JoinOptions, SubqueryOptions{
 
         private final StringBuilder stringBuilder;
         private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
@@ -47,6 +47,11 @@ public class Filter{
         }
 
         @Override
+        public FilterOptions closeParenthesis(String value) {
+            return null;
+        }
+
+        @Override
         public FieldOptions and() {
             stringBuilder.append(" AND ");
             return this;
@@ -63,9 +68,19 @@ public class Filter{
         }
 
         @Override
-        public JoinOptions subquery(Class<?> sourceClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-            Object value = sourceClass.getConstructor().newInstance();
-            SFHelper.generateSubquery(value, stringBuilder);
+        public JoinOptions subquery(Object source) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+            SFHelper.generateSubquery(source, stringBuilder, SFHelper.validateTotal(source.getClass()));
+            return this;
+        }
+
+        @Override
+        public FieldOptions openParenthesis(String value) {
+            return null;
+        }
+
+        @Override
+        public SubqueryOptions equal(){
+            stringBuilder.append(" = ");
             return this;
         }
 

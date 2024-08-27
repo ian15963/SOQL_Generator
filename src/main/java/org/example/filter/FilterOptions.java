@@ -11,6 +11,7 @@ public interface FilterOptions{
     JoinOptions equal(Double value);
     JoinOptions equal(LocalDateTime value);
     JoinOptions equal(LocalDate value);
+    SubqueryOptions equal();
     JoinOptions notEqual(String value);
     JoinOptions notEqual(Long value);
     JoinOptions notEqual(Integer value);

@@ -4,6 +4,7 @@ public class ResultadoVerificacao {
 
     private Integer total;
     private boolean umCampo;
+    private Integer posicaoAtual;
 
     public ResultadoVerificacao() {
     }
@@ -11,6 +12,12 @@ public class ResultadoVerificacao {
     public ResultadoVerificacao(Integer total, boolean umCampo) {
         this.total = total;
         this.umCampo = umCampo;
+    }
+
+    public ResultadoVerificacao(Integer total, boolean umCampo, Integer posicaoAtual) {
+        this.total = total;
+        this.umCampo = umCampo;
+        this.posicaoAtual = posicaoAtual;
     }
 
     public Integer getTotal() {
@@ -27,5 +34,13 @@ public class ResultadoVerificacao {
 
     public void setUmCampo(boolean umCampo) {
         this.umCampo = umCampo;
+    }
+
+    public Integer getPosicaoAtual() {
+        return posicaoAtual;
+    }
+
+    public void setPosicaoAtual(Integer posicaoAtual) {
+        this.posicaoAtual = posicaoAtual;
     }
 }
