@@ -6,11 +6,12 @@ import org.example.annotation.OneToMany;
 import org.example.annotation.OneToOne;
 import org.example.annotation.SFColumn;
 import org.example.annotation.SFEntityAnnotation;
+import org.example.constant.SFType;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Map;
+import java.util.*;
 
 public class SFHelper {
 
@@ -25,42 +26,71 @@ public class SFHelper {
         String classAnnotationName = classSource.getDeclaredAnnotation(SFEntityAnnotation.class).name().isBlank() ? classSource.getSimpleName() : classSource.getDeclaredAnnotation(SFEntityAnnotation.class).name();
         ResultadoVerificacao resultadoVerificacao = validateTotal(classSource);
         Integer posicao = 0;
+        Map<String, List<String>> map = new LinkedHashMap<>();
         for (Field field: fields) {
             if (field.isAnnotationPresent(SFColumn.class)) {
                 posicao++;
-                extractField(field, stringBuilder, resultadoVerificacao, posicao);
+                extractField(field, stringBuilder, resultadoVerificacao, posicao, map);
             }
         }
         stringBuilder.append(" FROM ");
         stringBuilder.append(classAnnotationName);
     }
 
-    private static void extractField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, Integer posicao){
+    private static void extractField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, Integer posicao, Map<String, List<String>> map){
         var isNotLast = resultadoVerificacao.isUmCampo() && posicao < resultadoVerificacao.getTotal();
         SFColumn declaredAnnotation = field.getDeclaredAnnotation(SFColumn.class);
+        JavaType type = TypeFactory.defaultInstance().constructType(field.getType());
         if(!(field.isAnnotationPresent(OneToMany.class) || field.isAnnotationPresent(OneToOne.class))){
+//            map.put(SFType.SIMPLE.name(), new ArrayList<>());
             if (isNotLast){
+//                map.get(SFType.SIMPLE.name()).add(" %s,".formatted(declaredAnnotation.name()));
                 stringBuilder.append(" %s,".formatted(declaredAnnotation.name()));
             }else{
+//                map.get(SFType.SIMPLE.name()).add(" %s".formatted(declaredAnnotation.name()));
                 stringBuilder.append(" %s".formatted(declaredAnnotation.name()));
             }
         }else{
-            if(field.isAnnotationPresent(OneToMany.class)){
+            if(field.isAnnotationPresent(OneToMany.class) && field.isAnnotationPresent(SFColumn.class)){
                 resultadoVerificacao.setPosicaoAtual(posicao);
                 generateSubquery(field, stringBuilder, resultadoVerificacao);
-            }else if(field.isAnnotationPresent(OneToOne.class)){
+            }else if(field.isAnnotationPresent(OneToOne.class) && field.isAnnotationPresent(SFColumn.class)){
+                map.put(declaredAnnotation.name(), new ArrayList<>());
                 for (Field declaredField: extractDeclaredField(field)){
-                    if (declaredField.isAnnotationPresent(OneToOne.class)){
+                    if (declaredField.isAnnotationPresent(OneToOne.class) && declaredField.isAnnotationPresent(SFColumn.class)){
                         JavaType javaType = TypeFactory.defaultInstance().constructType(field.getType());
                         Integer posicao2 = 0;
-                        extractField(declaredField, stringBuilder, validateTotal(javaType.getRawClass()), posicao2);
+                        extractField(declaredField, stringBuilder, validateTotal(javaType.getRawClass()), posicao2, map);
                         return;
                     }
                     if(declaredField.isAnnotationPresent(SFColumn.class)){
                         if (isNotLast){
-                            stringBuilder.append(" %s.%s,".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
+                            map.get(declaredAnnotation.name()).add("%s,".formatted(declaredField.getDeclaredAnnotation(SFColumn.class).name()));
+//                            stringBuilder.append(" %s.%s,".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
                         }else{
-                            stringBuilder.append(" %s.%s".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
+                            map.get(declaredAnnotation.name()).add("%s".formatted(declaredField.getDeclaredAnnotation(SFColumn.class).name()));
+//                            stringBuilder.append(" %s.%s".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
+                        }
+                    }
+                }
+
+                String baseEntity = "";
+                for (String key: map.keySet()){
+                    baseEntity = key;
+                    break;
+                }
+                for (Map.Entry<String, List<String>> keyValue: map.entrySet()){
+                    if (keyValue.getKey().equals(baseEntity)){
+                        for (String value: keyValue.getValue()){
+                            stringBuilder.append("%s.%s".formatted(baseEntity, value));
+                        }
+                    }else if(keyValue.getKey().equals(SFType.SIMPLE.name())){
+                        for (String value: keyValue.getValue()){
+                            stringBuilder.append("%s".formatted(value));
+                        }
+                    }else{
+                        for (String value: keyValue.getValue()){
+                            stringBuilder.append("%s.%s.%s".formatted(baseEntity, keyValue.getKey(), value));
                         }
                     }
                 }
@@ -110,10 +140,11 @@ public class SFHelper {
         stringBuilder.append("(SELECT");
         Integer posicao2 = 0;
         Integer posicaoAtual = resultadoVerificacao.getPosicaoAtual();
+        Map<String, List<String>> map = new LinkedHashMap<>();
         for (Field field1: extractDeclaredField(sourceObject)){
             if(field1.isAnnotationPresent(SFColumn.class)){
                 posicao2++;
-                extractField(field1, stringBuilder, resultadoVerificacao, posicao2);
+                extractField(field1, stringBuilder, resultadoVerificacao, posicao2, map);
             }
         }
 

@@ -9,12 +9,14 @@ import java.time.LocalDateTime;
 
 public class Main {
     public static void main(String[] args) throws NoSuchFieldException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        String query = SFQueryBuilder.select(SFEntity.class)
-                .where(Filter.FilterBuilder
-                        .initialField("Name")
-                        .equal().subquery(new Address("São Paulo", "SP"))
-                        .and().field("Address")
-                        .equal("Haddock Lobo").and().field("Date").greaterThanOrEqual(LocalDate.now()).build()).build();
+        String query = SFQueryBuilder
+                .select(SFEntity.class).build();
+//                .select(SFEntity.class)
+//                .where(Filter.FilterBuilder
+//                        .initialField("Name")
+//                        .equal().subquery(new Address("São Paulo", "SP"))
+//                        .and().field("Address")
+//                        .equal("Haddock Lobo").and().field("Date").greaterThanOrEqual(LocalDate.now()).build()).build();
         System.out.println(query);
     }
 }
