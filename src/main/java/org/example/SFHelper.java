@@ -40,14 +40,10 @@ public class SFHelper {
     private static void extractField(Field field, StringBuilder stringBuilder, ResultadoVerificacao resultadoVerificacao, Integer posicao, Map<String, List<String>> map){
         var isNotLast = resultadoVerificacao.isUmCampo() && posicao < resultadoVerificacao.getTotal();
         SFColumn declaredAnnotation = field.getDeclaredAnnotation(SFColumn.class);
-        JavaType type = TypeFactory.defaultInstance().constructType(field.getType());
         if(!(field.isAnnotationPresent(OneToMany.class) || field.isAnnotationPresent(OneToOne.class))){
-//            map.put(SFType.SIMPLE.name(), new ArrayList<>());
             if (isNotLast){
-//                map.get(SFType.SIMPLE.name()).add(" %s,".formatted(declaredAnnotation.name()));
                 stringBuilder.append(" %s,".formatted(declaredAnnotation.name()));
             }else{
-//                map.get(SFType.SIMPLE.name()).add(" %s".formatted(declaredAnnotation.name()));
                 stringBuilder.append(" %s".formatted(declaredAnnotation.name()));
             }
         }else{
@@ -66,10 +62,8 @@ public class SFHelper {
                     if(declaredField.isAnnotationPresent(SFColumn.class)){
                         if (isNotLast){
                             map.get(declaredAnnotation.name()).add("%s,".formatted(declaredField.getDeclaredAnnotation(SFColumn.class).name()));
-//                            stringBuilder.append(" %s.%s,".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
                         }else{
                             map.get(declaredAnnotation.name()).add("%s".formatted(declaredField.getDeclaredAnnotation(SFColumn.class).name()));
-//                            stringBuilder.append(" %s.%s".formatted(declaredAnnotation.name(), declaredField.getDeclaredAnnotation(SFColumn.class).name()));
                         }
                     }
                 }
@@ -79,18 +73,21 @@ public class SFHelper {
                     baseEntity = key;
                     break;
                 }
+
                 for (Map.Entry<String, List<String>> keyValue: map.entrySet()){
                     if (keyValue.getKey().equals(baseEntity)){
+//                        stringBuilder.append(lista.stream().reduce(baseEntity, (a,b) -> a + "." + b));
                         for (String value: keyValue.getValue()){
                             stringBuilder.append("%s.%s".formatted(baseEntity, value));
                         }
-                    }else if(keyValue.getKey().equals(SFType.SIMPLE.name())){
-                        for (String value: keyValue.getValue()){
-                            stringBuilder.append("%s".formatted(value));
-                        }
                     }else{
+                        String initial = baseEntity + "." + keyValue.getKey() + ".";
+
+//                        stringBuilder.append(keyValue.getValue().stream().reduce(initial, (a,b) -> a + "." + b));
                         for (String value: keyValue.getValue()){
-                            stringBuilder.append("%s.%s.%s".formatted(baseEntity, keyValue.getKey(), value));
+//
+//                            stringBuilder.append("%s.%s.%s".formatted(baseEntity, keyValue.getKey(), value));
+//                            stringBuilder.append("%s.%s.%s".formatted(baseEntity, keyValue.getKey(), value));
                         }
                     }
                 }
@@ -141,10 +138,12 @@ public class SFHelper {
         Integer posicao2 = 0;
         Integer posicaoAtual = resultadoVerificacao.getPosicaoAtual();
         Map<String, List<String>> map = new LinkedHashMap<>();
+        Type actualTypeArgument = sourceObject.getClass() == Field.class ? ((Field) sourceObject).getGenericType() : sourceObject.getClass();
+        JavaType javaType = TypeFactory.defaultInstance().constructType(actualTypeArgument);
         for (Field field1: extractDeclaredField(sourceObject)){
             if(field1.isAnnotationPresent(SFColumn.class)){
                 posicao2++;
-                extractField(field1, stringBuilder, resultadoVerificacao, posicao2, map);
+                extractField(field1, stringBuilder, validateTotal(javaType.getContentType() == null ? javaType.getRawClass() : javaType.getContentType().getRawClass()), posicao2, map);
             }
         }
 

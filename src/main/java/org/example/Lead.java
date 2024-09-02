@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.annotation.OneToOne;
 import org.example.annotation.SFColumn;
 import org.example.annotation.SFEntityAnnotation;
 
@@ -10,6 +11,15 @@ public class Lead {
     private Long id;
     @SFColumn(name = "Name__c")
     private String name;
+    @SFColumn(name = "contact")
+    @OneToOne
+    private Contact contact;
+
+    private static class Contact{
+
+        @SFColumn(name = "phone")
+        private String phone;
+    }
 
     public Lead() {
     }
