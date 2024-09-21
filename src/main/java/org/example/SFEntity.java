@@ -1,33 +1,32 @@
 package org.example;
 
-import org.example.annotation.OneToMany;
-import org.example.annotation.OneToOne;
-import org.example.annotation.SFColumn;
-import org.example.annotation.SFEntityAnnotation;
-import org.example.constant.SFType;
+import org.example.annotation.SalesforceOneToMany;
+import org.example.annotation.SalesforceOneToOne;
+import org.example.annotation.SalesforceColumn;
+import org.example.annotation.SalesforceEntity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@SFEntityAnnotation
+@SalesforceEntity
 public class SFEntity {
 
-    @SFColumn(name = "Id")
+    @SalesforceColumn(name = "Id")
     private String id;
 
-    @SFColumn(name = "Name")
+    @SalesforceColumn(name = "Name")
     private String name;
 
-    @SFColumn(name = "Address")
-    @OneToOne
+    @SalesforceColumn(name = "Address")
+    @SalesforceOneToOne
     private Address address;
 
-    @SFColumn(name = "Addresses")
-    @OneToMany
+    @SalesforceColumn(name = "Addresses")
+    @SalesforceOneToMany
     private List<Address> valores = new ArrayList<>();
 
-    @SFColumn(name = "Date")
+    @SalesforceColumn(name = "Date")
     private LocalDateTime dataHora;
 
     public SFEntity() {

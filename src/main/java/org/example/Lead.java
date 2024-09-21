@@ -1,14 +1,14 @@
 package org.example;
 
-import org.example.annotation.SFColumn;
-import org.example.annotation.SFEntityAnnotation;
+import org.example.annotation.SalesforceColumn;
+import org.example.annotation.SalesforceEntity;
 
-@SFEntityAnnotation
+@SalesforceEntity
 public class Lead {
 
-    @SFColumn(name = "Id")
+    @SalesforceColumn(name = "Id")
     private Long id;
-    @SFColumn(name = "Name__c")
+    @SalesforceColumn(name = "Name__c")
     private String name;
 
     public Lead() {

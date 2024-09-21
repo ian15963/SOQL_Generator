@@ -13,7 +13,7 @@ public class SFQueryBuilder implements BuilderOptions{
 
     public static SFQueryBuilder select(Class<?> sourceClass) throws NoSuchFieldException {
         SFQueryBuilder queryBuilder = new SFQueryBuilder(new StringBuilder());
-        queryBuilder.query.append(SoqlOperators.SELECT);
+        queryBuilder.query.append("%s ".formatted(SoqlOperators.SELECT));
         SFHelper.generateBaseQuery(sourceClass, queryBuilder.query);
         return queryBuilder;
     }

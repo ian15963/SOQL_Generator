@@ -69,7 +69,7 @@ public class Filter{
 
         @Override
         public JoinOptions subquery(Object source) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-            SFHelper.generateSubquery(source, stringBuilder, SFHelper.validateTotal(source.getClass()));
+            SFHelper.generateSubquery(source, stringBuilder);
             return this;
         }
 

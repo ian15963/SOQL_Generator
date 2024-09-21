@@ -1,19 +1,19 @@
 package org.example;
 
-import org.example.annotation.OneToOne;
-import org.example.annotation.SFColumn;
-import org.example.annotation.SFEntityAnnotation;
+import org.example.annotation.SalesforceOneToOne;
+import org.example.annotation.SalesforceColumn;
+import org.example.annotation.SalesforceEntity;
 
-@SFEntityAnnotation(name = "Address")
+@SalesforceEntity(name = "Address")
 public class Address {
 
-    @SFColumn(name = "city")
+    @SalesforceColumn(name = "city")
     private String city;
-    @SFColumn(name = "state")
+    @SalesforceColumn(name = "state")
     private String state;
 
-    @SFColumn(name = "lead")
-    @OneToOne
+    @SalesforceColumn(name = "lead")
+    @SalesforceOneToOne
     private Lead lead;
     private String street;
 
