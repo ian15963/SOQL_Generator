@@ -20,50 +20,50 @@ public class SFHelper {
             throw new RuntimeException();
         }
         String classAnnotationName = classSource.getDeclaredAnnotation(SalesforceEntity.class).name().isBlank() ? classSource.getSimpleName() : classSource.getDeclaredAnnotation(SalesforceEntity.class).name();
-        QueryEntity queryEntity = new QueryEntity();
+        QueryControl queryControl = new QueryControl();
         for (Field field: fields) {
             if (field.isAnnotationPresent(SalesforceColumn.class)) {
-                extractField(field, queryEntity);
+                extractField(field, queryControl);
             }
         }
 
-        buildQuery(queryEntity, stringBuilder);
+        buildQuery(queryControl, stringBuilder);
         stringBuilder.append(" FROM ");
         stringBuilder.append(classAnnotationName);
     }
 
-    public static void buildQuery(QueryEntity queryEntity, StringBuilder stringBuilder){
-        if(!queryEntity.getQueryEntities().isEmpty()){
-            for (int i = 0; i < queryEntity.getQueryEntities().size(); i++){
+    private static void buildQuery(QueryControl queryControl, StringBuilder stringBuilder){
+        if(!queryControl.getQueryControls().isEmpty()){
+            for (int i = 0; i < queryControl.getQueryControls().size(); i++){
                 if (i != 0){
                     stringBuilder.append(", ");
                 }
-                fillQuery(queryEntity.getQueryEntities().get(i), stringBuilder);
+                fillQuery(queryControl.getQueryControls().get(i), stringBuilder);
             }
         }
     }
 
-    public static void fillQuery(QueryEntity queryEntity, StringBuilder stringBuilder){
-        if (queryEntity != null){
-            if (queryEntity.getNome() != null){
-                if (queryEntity.getAnnotation() != null){
-                    if (queryEntity.getAnnotation().annotationType().equals(SalesforceOneToMany.class)){
+    private static void fillQuery(QueryControl queryControl, StringBuilder stringBuilder){
+        if (queryControl != null){
+            if (queryControl.getNome() != null){
+                if (queryControl.getAnnotation() != null){
+                    if (queryControl.getAnnotation().annotationType().equals(SalesforceOneToMany.class)){
                         stringBuilder.append("(SELECT ");
-                        buildQuery(queryEntity, stringBuilder);
+                        buildQuery(queryControl, stringBuilder);
                         stringBuilder.append(" FROM ");
-                        stringBuilder.append("%s)".formatted(queryEntity.getNome()));
+                        stringBuilder.append("%s)".formatted(queryControl.getNome()));
                         return;
                     }
                 }
-                QueryEntity previous = queryEntity.getPrevious();
-                if (queryEntity.getQueryEntities().isEmpty() && previous.getNome() == null){
-                    stringBuilder.append("%s".formatted(queryEntity.getNome()));
+                QueryControl previous = queryControl.getPrevious();
+                if (queryControl.getQueryControls().isEmpty() && previous.getNome() == null){
+                    stringBuilder.append("%s".formatted(queryControl.getNome()));
                 }else{
-                    String baseEntity = queryEntity.getNome();
-                    Annotation queryEntityPreviousAnnotation = queryEntity.getPrevious().getAnnotation() == null ? null : queryEntity.getPrevious().getAnnotation();
+                    String baseEntity = queryControl.getNome();
+                    Annotation queryEntityPreviousAnnotation = queryControl.getPrevious().getAnnotation() == null ? null : queryControl.getPrevious().getAnnotation();
                     Class<?> queryEntityPreviousAnnotationType = queryEntityPreviousAnnotation == null ? null : queryEntityPreviousAnnotation.annotationType();
-                    if (queryEntity.getAnnotation() == null &&
-                            (queryEntity.getQueryEntities().isEmpty() || (queryEntity.getQueryEntities().isEmpty() && queryEntityPreviousAnnotationType != null && queryEntityPreviousAnnotationType.equals(SalesforceOneToOne.class)))){
+                    if (queryControl.getAnnotation() == null &&
+                            (queryControl.getQueryControls().isEmpty() || (queryControl.getQueryControls().isEmpty() && queryEntityPreviousAnnotationType != null && queryEntityPreviousAnnotationType.equals(SalesforceOneToOne.class)))){
                         if (previous.getNome() != null){
                             while(previous != null){
                                 if (previous.getNome() != null){
@@ -74,33 +74,44 @@ public class SFHelper {
                             stringBuilder.append("%s".formatted(baseEntity));
                         }
                     }
-                    buildQuery(queryEntity, stringBuilder);
+                    buildQuery(queryControl, stringBuilder);
                 }
             }
         }
     }
 
-    private static void extractField(Field field, QueryEntity queryEntity){
+    private static void extractField(Field field, QueryControl queryControl){
         SalesforceColumn declaredAnnotation = field.getDeclaredAnnotation(SalesforceColumn.class);
-        if (queryEntity.getNome() == null){
-            queryEntity.getQueryEntities().add(new QueryEntity(declaredAnnotation.name(), queryEntity));
+        if (queryControl.getNome() == null){
+            queryControl.getQueryControls().add(new QueryControl(declaredAnnotation.name(), queryControl));
         }
-
         if(field.isAnnotationPresent(SalesforceOneToMany.class) && field.isAnnotationPresent(SalesforceColumn.class)){
-           extractQueryEntity(queryEntity, field, field.getDeclaredAnnotation(SalesforceOneToMany.class));
+            Type actualTypeArgument = field.getGenericType();
+            JavaType javaType = TypeFactory.defaultInstance().constructType(actualTypeArgument);
+            Class<?> classz = javaType.getContentType().getRawClass();
+            if (classz.getDeclaredAnnotation(SalesforceEntity.class) == null){
+                throw new IllegalArgumentException("Class of type %s is not a SalesforceEntity".formatted(classz.getSimpleName()));
+            }
+            extractQueryControl(queryControl, field, field.getDeclaredAnnotation(SalesforceOneToMany.class));
         }else if(field.isAnnotationPresent(SalesforceOneToOne.class) && field.isAnnotationPresent(SalesforceColumn.class)){
-           extractQueryEntity(queryEntity, field, field.getDeclaredAnnotation(SalesforceOneToOne.class));
+            Type actualTypeArgument = field.getGenericType();
+            JavaType javaType = TypeFactory.defaultInstance().constructType(actualTypeArgument);
+            Class<?> classz = javaType.getRawClass();
+            if (classz.getDeclaredAnnotation(SalesforceEntity.class) == null){
+                throw new IllegalArgumentException("Class of type %s is not a SalesforceEntity".formatted(classz.getSimpleName()));
+            }
+            extractQueryControl(queryControl, field, field.getDeclaredAnnotation(SalesforceOneToOne.class));
         }
     }
 
-    private static void extractQueryEntity(QueryEntity queryEntity, Field field, Annotation annotation){
-        List<QueryEntity> queryEntityList = queryEntity.getQueryEntities();
-        QueryEntity lastValue = queryEntityList.get(queryEntityList.size()-1);
+    private static void extractQueryControl(QueryControl queryControl, Field field, Annotation annotation){
+        List<QueryControl> queryControlList = queryControl.getQueryControls();
+        QueryControl lastValue = queryControlList.get(queryControlList.size()-1);
         lastValue.setAnnotation(annotation);
-        queryEntityList = lastValue.getQueryEntities();
+        queryControlList = lastValue.getQueryControls();
         for (Field declaredField: extractDeclaredField(field)){
             if(declaredField.isAnnotationPresent(SalesforceColumn.class)){
-                queryEntityList.add(new QueryEntity(declaredField.getDeclaredAnnotation(SalesforceColumn.class).name(), lastValue));
+                queryControlList.add(new QueryControl(declaredField.getDeclaredAnnotation(SalesforceColumn.class).name(), lastValue));
                 if (declaredField.isAnnotationPresent(SalesforceOneToOne.class) || declaredField.isAnnotationPresent(SalesforceOneToMany.class)){
                     extractField(declaredField, lastValue);
                 }
@@ -129,13 +140,13 @@ public class SFHelper {
         String classAnnotationName = sourceClass == Field.class ? ((Field)sourceObject).getDeclaredAnnotation(SalesforceColumn.class).name() : sourceClass.getDeclaredAnnotation(SalesforceEntity.class).name();
 
         stringBuilder.append("(SELECT ");
-        QueryEntity queryEntity = new QueryEntity();
+        QueryControl queryControl = new QueryControl();
         for (Field field1: extractDeclaredField(sourceObject)){
             if(field1.isAnnotationPresent(SalesforceColumn.class)){
-                extractField(field1, queryEntity);
+                extractField(field1, queryControl);
             }
         }
-        buildQuery(queryEntity, stringBuilder);
+        buildQuery(queryControl, stringBuilder);
         stringBuilder.append(" FROM ");
         stringBuilder.append("%s)".formatted(classAnnotationName));
     }

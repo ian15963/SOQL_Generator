@@ -4,27 +4,27 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QueryEntity {
+public class QueryControl {
 
-    private QueryEntity previous;
+    private QueryControl previous;
     private String nome;
-    private List<QueryEntity> queryEntities;
+    private List<QueryControl> queryControls;
     private Annotation annotation;
 
-    public QueryEntity() {
-        queryEntities = new ArrayList<>();
+    public QueryControl() {
+        queryControls = new ArrayList<>();
     }
 
-    public QueryEntity(String nome, QueryEntity previous) {
+    public QueryControl(String nome, QueryControl previous) {
         this.nome = nome;
         this.previous = previous;
-        this.queryEntities = new ArrayList<>();
+        this.queryControls = new ArrayList<>();
     }
 
-    public QueryEntity(String nome, QueryEntity previous,Annotation annotation) {
+    public QueryControl(String nome, QueryControl previous, Annotation annotation) {
         this(nome, previous);
         this.annotation = annotation;
-        this.queryEntities = new ArrayList<>();
+        this.queryControls = new ArrayList<>();
     }
 
     public String getNome() {
@@ -35,19 +35,19 @@ public class QueryEntity {
         this.nome = nome;
     }
 
-    public List<QueryEntity> getQueryEntities() {
-        return queryEntities;
+    public List<QueryControl> getQueryControls() {
+        return queryControls;
     }
 
-    public void setQueryEntities(List<QueryEntity> queryEntities) {
-        this.queryEntities = queryEntities;
+    public void setQueryControls(List<QueryControl> queryControls) {
+        this.queryControls = queryControls;
     }
 
-    public QueryEntity getPrevious() {
+    public QueryControl getPrevious() {
         return previous;
     }
 
-    public void setPrevious(QueryEntity previous) {
+    public void setPrevious(QueryControl previous) {
         this.previous = previous;
     }
 

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 public class Main {
     public static void main(String[] args) throws NoSuchFieldException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        System.out.println();
         String query = SFQueryBuilder
 //                .select(SFEntity.class).build();
                 .select(SFEntity.class)
